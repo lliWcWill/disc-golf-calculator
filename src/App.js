@@ -61,15 +61,62 @@ const DiscGolfCalculator = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
+    let newValue = value;
+
+    // Handle empty string or just minus sign
+    if (value === '' || value === '-') {
+      newValue = value;
+    } else {
+      // Convert to number and check bounds
+      const numValue = parseFloat(value);
+      if (!isNaN(numValue)) {
+        // Apply min/max bounds based on the field
+        switch (name) {
+          case 'speed':
+            newValue = Math.min(Math.max(numValue, 1), 14);
+            break;
+          case 'glide':
+            newValue = Math.min(Math.max(numValue, 1), 7);
+            break;
+          case 'turn':
+            newValue = Math.min(Math.max(numValue, -5), 1);
+            break;
+          case 'fade':
+            newValue = Math.min(Math.max(numValue, 0), 5);
+            break;
+          default:
+            newValue = numValue;
+        }
+      }
+    }
+
     setFormInputs((prev) => ({
       ...prev,
-      [name]: parseFloat(value) || 0,
+      [name]: newValue,
     }));
+  };
+
+  const handleBlur = (e) => {
+    const { name, value } = e.target;
+    // If the field is empty or just a minus sign, reset to 0
+    if (value === '' || value === '-') {
+      setFormInputs((prev) => ({
+        ...prev,
+        [name]: 0,
+      }));
+    }
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    setActiveDiscStats(formInputs);
+    // Ensure all values are numbers before setting active stats
+    const processedInputs = {
+      speed: parseFloat(formInputs.speed) || 0,
+      glide: parseFloat(formInputs.glide) || 0,
+      turn: parseFloat(formInputs.turn) || 0,
+      fade: parseFloat(formInputs.fade) || 0,
+    };
+    setActiveDiscStats(processedInputs);
   };
 
   const stability = activeDiscStats
@@ -84,6 +131,22 @@ const DiscGolfCalculator = () => {
   const overDistance = activeDiscStats
     ? calculateDistance(activeDiscStats.speed, activeDiscStats.glide, 1.3)
     : null;
+
+  // Helper function to create number input props
+  const getInputProps = (name, min, max) => ({
+    id: name,
+    name: name,
+    type: "text",
+    inputMode: "numeric",
+    pattern: "-?[0-9]*",
+    value: formInputs[name],
+    onChange: handleInputChange,
+    onBlur: handleBlur,
+    className: "text-lg h-12",
+    "aria-label": `${name} value`,
+    min: min,
+    max: max,
+  });
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-8">
